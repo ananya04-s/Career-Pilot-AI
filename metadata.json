@@ -1,0 +1,6 @@
+{
+  "name": "CareerPilot AI",
+  "description": "A premium AI-powered career co-pilot and growth platform for students and fresh graduates featuring a resume analyzer, interview prep, job tracker, and personalized AI coaching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
