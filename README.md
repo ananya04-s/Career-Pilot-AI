@@ -170,19 +170,3 @@ git clone https://github.com/yourusername/CareerConnect.git
 Contributions, feature requests, and suggestions are welcome. Feel free to fork the repository, create a new branch, and submit a pull request.
 
 ---
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
----
-
-## 👩‍💻 Developed By
-
-**Ananya S**
-
-Bachelor of Engineering – Artificial Intelligence & Machine Learning
-
-Passionate about Android Development, Artificial Intelligence, and building innovative solutions that empower students and job seekers.
-
-⭐ If you like this project, don't forget to star the repository!
