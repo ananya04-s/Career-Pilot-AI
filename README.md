@@ -5,7 +5,7 @@
 ### Your Intelligent Career Growth Companion
 
 <p align="center">
-<img src="assets/banner.png" width="100%" alt="CareerPilot AI Banner">
+
 </p>
 
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)
