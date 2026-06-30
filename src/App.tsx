@@ -21,6 +21,7 @@ import CommunityFeed from "./components/CommunityFeed";
 import NotificationsTimeline from "./components/NotificationsTimeline";
 import UserProfileView from "./components/UserProfileView";
 import SettingsPanel from "./components/SettingsPanel";
+import CareerRoadmap from "./components/CareerRoadmap";
 
 import { 
   UserProfile, 
@@ -321,6 +322,19 @@ export default function App() {
             user={user}
             darkMode={darkMode}
             onAddJob={handleAddJob}
+          />
+        );
+      case "roadmap":
+        return (
+          <CareerRoadmap 
+            user={user}
+            skills={skills}
+            certs={certs}
+            darkMode={darkMode}
+            onAddSkill={handleAddSkill}
+            onAddCert={handleAddCert}
+            onUpdateProfile={handleUpdateProfile}
+            onRefreshProfile={() => email && loadAllUserData(email)}
           />
         );
       case "skills":

@@ -15,7 +15,8 @@ import {
   Users,
   Bell,
   Settings,
-  BookOpen
+  BookOpen,
+  Map
 } from "lucide-react";
 import { UserProfile } from "../types";
 
@@ -42,6 +43,7 @@ export default function Header({
     { id: "dashboard", label: "Dashboard", icon: Compass },
     { id: "resume", label: "Resume Builder", icon: FileText },
     { id: "jobs", label: "Job Explorer", icon: Briefcase },
+    { id: "roadmap", label: "Career Roadmap", icon: Map },
     { id: "skills", label: "Academy Tracks", icon: BookOpen },
     { id: "interview", label: "Interview Prep", icon: Activity },
     { id: "community", label: "Community", icon: Users },

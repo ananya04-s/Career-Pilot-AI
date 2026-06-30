@@ -1350,6 +1350,300 @@ Provide a supportive, beautifully structured markdown reply. Keep paragraphs ele
   res.json({ text: responseText });
 });
 
+// Award XP directly to user profile
+app.post("/api/profile/award-xp", (req, res) => {
+  const db = loadDb();
+  const { email, amount, reason } = req.body;
+  
+  if (!email || !amount) {
+    return res.status(400).json({ error: "Email and amount are required." });
+  }
+  
+  const user: any = Object.values(db.users).find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) {
+    return res.status(404).json({ error: "User profile not found." });
+  }
+  
+  const reward = awardXp(user.uid, amount, db);
+  saveDb(db);
+  
+  res.json({ success: true, user, gamification: reward, reason });
+});
+
+// Generate dynamic AI Career Roadmap via Gemini or smart templates
+app.post("/api/roadmap/generate", async (req, res) => {
+  const { role, level, currentSkills, email } = req.body;
+  
+  if (!role || !level) {
+    return res.status(400).json({ error: "Target job role and experience level are required." });
+  }
+
+  // Pre-configured fallback templates for safety
+  const fallbacks: Record<string, any[]> = {
+    "Full Stack Engineer": [
+      {
+        id: "fs-1",
+        stageName: "Stage 1: Web Foundations",
+        title: "Core Client-Side & Styling",
+        description: "Master modern semantic HTML, advanced CSS layouts (Flexbox, Grid), responsive principles, and basic modern ES6+ Javascript.",
+        skills: [
+          { name: "React", requiredLevel: "Beginner" },
+          { name: "TypeScript", requiredLevel: "Beginner" },
+          { name: "CSS Grid", requiredLevel: "Intermediate" }
+        ],
+        actionItems: [
+          { id: "fs-1-a1", title: "Build an interactive, fully responsive personal landing page" },
+          { id: "fs-1-a2", title: "Implement a deep modern API connection using standard Fetch and async/await" },
+          { id: "fs-1-a3", title: "Practice styling standard layouts without standard component libraries" }
+        ],
+        resources: [
+          { title: "HTML and CSS: Design and Build Websites", provider: "Wiley Publishing", type: "Article" },
+          { title: "Responsive Web Design Certification", provider: "freeCodeCamp", type: "Course" }
+        ],
+        mentorTip: "Don't rush to framework learning. Mastery of standard Javascript and CSS selectors will save you countless hours of troubleshooting later."
+      },
+      {
+        id: "fs-2",
+        stageName: "Stage 2: Core Engineering & Systems",
+        title: "State Management & Server Integration",
+        description: "Step into structural routing, React hook optimizations, robust forms, server-side interactions, and basic database queries.",
+        skills: [
+          { name: "React", requiredLevel: "Intermediate" },
+          { name: "Node.js", requiredLevel: "Beginner" },
+          { name: "PostgreSQL", requiredLevel: "Beginner" }
+        ],
+        actionItems: [
+          { id: "fs-2-a1", title: "Design a full REST API with Express hosting multiple relational tables" },
+          { id: "fs-2-a2", title: "Optimize expensive React state triggers using useMemo, useCallback" },
+          { id: "fs-2-a3", title: "Implement basic JWT auth flow with local token encryption" }
+        ],
+        resources: [
+          { title: "Node.js Complete Guide", provider: "Maximilian Schwarzmüller", type: "Course" },
+          { title: "Relational Database Masterclass", provider: "Coursera", type: "Course" }
+        ],
+        mentorTip: "Always profile your React re-renders. Avoid storing large structured raw arrays in general state if only simple ID tracking is needed."
+      },
+      {
+        id: "fs-3",
+        stageName: "Stage 3: Enterprise Integration",
+        title: "Caching, Queues & Middleware",
+        description: "Optimize server execution with in-memory caching layers (Redis), structured state stores (Zustand/Redux), background tasks, and Docker orchestration.",
+        skills: [
+          { name: "TypeScript", requiredLevel: "Expert" },
+          { name: "Docker / Containerization", requiredLevel: "Intermediate" },
+          { name: "Redis / Caching Layer", requiredLevel: "Beginner" }
+        ],
+        actionItems: [
+          { id: "fs-3-a1", title: "Dockerize a local multi-container development sandbox using Compose" },
+          { id: "fs-3-a2", title: "Set up a standard queue processor to handle background emails or uploads" },
+          { id: "fs-3-a3", title: "Optimize slow SQL read endpoints with Redis cache triggers" }
+        ],
+        resources: [
+          { title: "Docker & Kubernetes: The Complete Guide", provider: "Stephen Grider", type: "Course" },
+          { title: "Redis University: RU101 Basics", provider: "Redis Labs", type: "Cert" }
+        ],
+        mentorTip: "At this stage, you should think about scalability. A junior coder builds features; an enterprise full stack engineer builds systems that survive spikes."
+      },
+      {
+        id: "fs-4",
+        stageName: "Stage 4: Cloud Native Operations",
+        title: "CI/CD & Cloud Scale deployments",
+        description: "Deliver highly reliable software with fully automated CI/CD suites (GitHub Actions), infrastructure-as-code, and serverless hosting platforms.",
+        skills: [
+          { name: "CI/CD Pipelines (GitHub Actions)", requiredLevel: "Intermediate" },
+          { name: "Cloud Native Architecture", requiredLevel: "Intermediate" },
+          { name: "GraphQL / Apollo Client", requiredLevel: "Intermediate" }
+        ],
+        actionItems: [
+          { id: "fs-4-a1", title: "Write a linting, formatting, and unit-testing GitHub Actions workflow" },
+          { id: "fs-4-a2", title: "Deploy a highly modular backend to production with automatic rolling releases" },
+          { id: "fs-4-a3", title: "Write a high-performance GraphQL schema supporting real-time mutations" }
+        ],
+        resources: [
+          { title: "AWS Certified Developer Associate", provider: "Amazon Web Services", type: "Cert" },
+          { title: "Continuous Delivery and DevOps Patterns", provider: "University of Virginia", type: "Course" }
+        ],
+        mentorTip: "Keep production immutable. If a manual environment login is required to fix a deployment, your deployment system is lacking."
+      }
+    ]
+  };
+
+  if (ai) {
+    try {
+      const prompt = `You are an elite career development strategist and CTO. 
+Generate a custom, hyper-personalized, step-by-step career progression roadmap for a student targeting the role "${role}" at the "${level}" experience level.
+Their current registered skills are: ${JSON.stringify(currentSkills || [])}.
+
+The roadmap MUST have exactly 4 stages of progression, spanning foundations to advanced/expert systems and leadership.
+Return a single JSON object conforming EXACTLY to this schema structure:
+{
+  "roadmap": [
+    {
+      "id": "stage-unique-id-1",
+      "stageName": "Stage 1: [Stage Name]",
+      "title": "[Short descriptive title of this stage]",
+      "description": "[Detailed 1-2 sentence description explaining what they master here]",
+      "skills": [
+        { "name": "React", "requiredLevel": "Beginner" }
+      ],
+      "actionItems": [
+        { "id": "action-1", "title": "Build a specific, highly relevant production-like project using these tools" },
+        { "id": "action-2", "title": "Another concrete actionable progression task or milestone" }
+      ],
+      "resources": [
+        { "title": "Specific Course Name", "provider": "Coursera", "type": "Course" }
+      ],
+      "mentorTip": "A deep professional piece of advice on what managers actually look for in candidates at this level."
+    }
+  ]
+}
+
+Ensure all recommended skills and certificates are highly realistic and industry standard. Make action items extremely actionable (e.g. "Build a multi-tenant SaaS dashboard", not just "learn react"). Keep it constructive, positive, and elite. Return only the raw JSON.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              roadmap: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    id: { type: Type.STRING },
+                    stageName: { type: Type.STRING },
+                    title: { type: Type.STRING },
+                    description: { type: Type.STRING },
+                    skills: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          name: { type: Type.STRING },
+                          requiredLevel: { type: Type.STRING }
+                        },
+                        required: ["name", "requiredLevel"]
+                      }
+                    },
+                    actionItems: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          id: { type: Type.STRING },
+                          title: { type: Type.STRING }
+                        },
+                        required: ["id", "title"]
+                      }
+                    },
+                    resources: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          title: { type: Type.STRING },
+                          provider: { type: Type.STRING },
+                          type: { type: Type.STRING }
+                        },
+                        required: ["title", "provider", "type"]
+                      }
+                    },
+                    mentorTip: { type: Type.STRING }
+                  },
+                  required: ["id", "stageName", "title", "description", "skills", "actionItems", "resources", "mentorTip"]
+                }
+              }
+            },
+            required: ["roadmap"]
+          }
+        }
+      });
+
+      if (response.text) {
+        const parsed = JSON.parse(response.text.trim());
+        if (parsed && Array.isArray(parsed.roadmap)) {
+          // Increment user XP slightly for generating the path
+          const db = loadDb();
+          const user: any = Object.values(db.users).find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+          let reward = null;
+          if (user) {
+            reward = awardXp(user.uid, 150, db);
+            saveDb(db);
+          }
+          return res.json({ roadmap: parsed.roadmap, gamification: reward });
+        }
+      }
+    } catch (err) {
+      console.error("Gemini roadmap generation failed, reverting to custom templates:", err);
+    }
+  }
+
+  // Fallback to custom presets
+  let resultRoadmap = fallbacks[role];
+  if (!resultRoadmap) {
+    // Generate simple dynamic roadmap
+    resultRoadmap = [
+      {
+        id: "dyn-1",
+        stageName: "Stage 1: Core Essentials",
+        title: `${role} Basics`,
+        description: `Understand the fundamental concepts, workflows, and tools essential for ${role}.`,
+        skills: [
+          { name: "React", requiredLevel: "Beginner" },
+          { name: "TypeScript", requiredLevel: "Beginner" }
+        ],
+        actionItems: [
+          { id: "dyn-1-a1", title: `Set up a complete local development workspace for ${role}` },
+          { id: "dyn-1-a2", title: "Build a prototype showcasing basic functional outputs" }
+        ],
+        resources: [
+          { title: `${role} Masterclass Foundations`, provider: "Udemy", type: "Course" }
+        ],
+        mentorTip: "Mastering foundational tools like git, command prompt workflows, and editors early is key to rapid scale."
+      },
+      {
+        id: "dyn-2",
+        stageName: "Stage 2: Core Engineering & Systems",
+        title: "Integration and Security",
+        description: `Learn how to connect data engines, write robust endpoint routes, and manage user details securely.`,
+        skills: [
+          { name: "Node.js", requiredLevel: "Beginner" }
+        ],
+        actionItems: [
+          { id: "dyn-2-a1", title: "Integrate a real relational or document datastore" },
+          { id: "dyn-2-a2", title: "Write a clean automated suite executing basic status tests" }
+        ],
+        resources: [
+          { title: "API Development & Database Integrations", provider: "Coursera", type: "Course" }
+        ],
+        mentorTip: "Always validate and sanitize user inputs server-side. Trusting user data blindly is the number one source of system vulnerabilities."
+      },
+      {
+        id: "dyn-3",
+        stageName: "Stage 3: Enterprise Delivery",
+        title: "Deployments and Pipeline Orchestrations",
+        description: `Optimize speed, establish testing workflows, and bundle releases cleanly for live hosting platforms.`,
+        skills: [
+          { name: "Docker / Containerization", requiredLevel: "Intermediate" }
+        ],
+        actionItems: [
+          { id: "dyn-3-a1", title: "Write a basic continuous integration rule checking lint issues" },
+          { id: "dyn-3-a2", title: "Run diagnostics analyzing package sizes and caching assets" }
+        ],
+        resources: [
+          { title: "Professional Deployment Operations", provider: "EdX", type: "Cert" }
+        ],
+        mentorTip: "A production environment should be entirely automated. If any step of your release requires clicking buttons manually, script it."
+      }
+    ];
+  }
+
+  res.json({ roadmap: resultRoadmap, isFallback: true });
+});
+
 // Clear/Reset DB route (convenient for testing or resetting demo state)
 app.post("/api/reset", (req, res) => {
   const defaultData = getDefaultDb();
